@@ -1,12 +1,11 @@
 // src/App.jsx
-import { collection, addDoc, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
-import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from './firebase'; 
 import './index.css';
 
 export default function App() {
-  const [role, setRole] = useState(null); // 'admin' ou 'visitante'
+  const [role, setRole] = useState(null);
   const [senha, setSenha] = useState('');
   
   const [textoInput, setTextoInput] = useState('');
@@ -18,7 +17,6 @@ export default function App() {
   const mesAtualNum = dataAtual.getMonth();
   const anoAtualNum = dataAtual.getFullYear();
 
-  // Sistema de Login
   const handleLogin = (e) => {
     e.preventDefault();
     if (senha === 'admin123') setRole('admin');
@@ -26,9 +24,8 @@ export default function App() {
     else alert('Senha incorreta!');
   };
 
-  // Buscar dados no Firebase
   useEffect(() => {
-    if (!role) return; // Só busca se estiver logado
+    if (!role) return;
 
     const q = query(
       collection(db, "gastos"),
@@ -38,11 +35,10 @@ export default function App() {
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const gastosFirebase = [];
-      querySnapshot.forEach((doc) => {
-        gastosFirebase.push({ id: doc.id, ...doc.data() });
+      querySnapshot.forEach((documento) => {
+        gastosFirebase.push({ id: documento.id, ...documento.data() });
       });
       
-      // Ordena pelos mais recentes
       gastosFirebase.sort((a, b) => (a.criadoEm?.seconds || 0) - (b.criadoEm?.seconds || 0));
       setGastos(gastosFirebase);
     });
@@ -50,7 +46,6 @@ export default function App() {
     return () => unsubscribe();
   }, [mesAtualNum, anoAtualNum, role]);
 
-  // Processar o texto digitado
   const processarTexto = (texto) => {
     const regexParcela = /(.*?)\s+(\d+)\s+(?:de|\/)\s+(\d+)\s+(?:R\$?\s*)?([\d,.]+)/i;
     const matchParcela = texto.match(regexParcela);
@@ -92,7 +87,6 @@ export default function App() {
     return null; 
   };
 
-  // Salvar no Firebase
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!textoInput.trim() || role !== 'admin') return;
@@ -109,13 +103,14 @@ export default function App() {
     }
   };
 
+  // Função de apagar gasto da nuvem
   const deletarGasto = async (id) => {
-      if (role !== 'admin') return;
-      const confirmacao = window.confirm("Deseja realmente apagar este gasto?");
-      if (confirmacao) {
-        await deleteDoc(doc(db, "gastos", id));
-      }
-    };
+    if (role !== 'admin') return;
+    const confirmacao = window.confirm("Deseja realmente apagar este gasto?");
+    if (confirmacao) {
+      await deleteDoc(doc(db, "gastos", id));
+    }
+  };
 
   const mudarMes = (direcao) => {
     setDataAtual(new Date(anoAtualNum, mesAtualNum + direcao, 1));
@@ -125,7 +120,6 @@ export default function App() {
   const totalGastos = gastos.reduce((acc, curr) => acc + curr.valor, 0);
   const saldo = ganhos - totalGastos;
 
-  // Tela de Login
   if (!role) {
     return (
       <div className="app-container" style={{ justifyContent: 'center', padding: '40px 20px' }}>
@@ -147,7 +141,6 @@ export default function App() {
     );
   }
 
-  // Tela Principal
   return (
     <div className="app-container">
       <header className="header">
@@ -173,27 +166,28 @@ export default function App() {
           gastos.map(g => (
             <div key={g.id} className="gasto-item">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span className="descricao">{g.descricao}</span>
+                {g.parcela && <span className="parcela">{g.parcela}</span>}
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span className="valor">R$ {g.valor.toFixed(2).replace('.', ',')}</span>
                 {role === 'admin' && (
                   <button 
                     onClick={() => deletarGasto(g.id)}
-                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '1.2rem', cursor: 'pointer' }}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '1.5rem', cursor: 'pointer', padding: '0 5px' }}
                     title="Apagar gasto"
                   >
                     ×
                   </button>
                 )}
               </div>
-                {g.parcela && <span className="parcela">{g.parcela}</span>}
-              </div>
-              <span className="valor">R$ {g.valor.toFixed(2).replace('.', ',')}</span>
+
             </div>
           ))
         )}
       </main>
 
-      {/* A barra de input SÓ aparece se o usuário for admin */}
       {role === 'admin' && (
         <form className="input-form" onSubmit={handleSubmit}>
           <input
