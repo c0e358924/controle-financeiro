@@ -94,10 +94,14 @@ export default function App() {
     const novosGastos = processarTexto(textoInput);
 
     if (novosGastos) {
-      for (const gasto of novosGastos) {
-        await addDoc(collection(db, "gastos"), gasto);
+      try {
+        for (const gasto of novosGastos) {
+          await addDoc(collection(db, "gastos"), gasto);
+        }
+        setTextoInput(''); // Só limpa o texto se o Firebase confirmar o salvamento
+      } catch (erro) {
+        alert("Erro ao enviar para o Firebase: " + erro.message);
       }
-      setTextoInput('');
     } else {
       alert('Formato não reconhecido! Use: "nome valor" ou "nome 1 de 3 valor"');
     }
