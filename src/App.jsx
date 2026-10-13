@@ -1,4 +1,5 @@
 // src/App.jsx
+import { collection, addDoc, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase'; 
@@ -108,6 +109,14 @@ export default function App() {
     }
   };
 
+  const deletarGasto = async (id) => {
+      if (role !== 'admin') return;
+      const confirmacao = window.confirm("Deseja realmente apagar este gasto?");
+      if (confirmacao) {
+        await deleteDoc(doc(db, "gastos", id));
+      }
+    };
+
   const mudarMes = (direcao) => {
     setDataAtual(new Date(anoAtualNum, mesAtualNum + direcao, 1));
   };
@@ -164,7 +173,18 @@ export default function App() {
           gastos.map(g => (
             <div key={g.id} className="gasto-item">
               <div>
-                <span className="descricao">{g.descricao}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span className="valor">R$ {g.valor.toFixed(2).replace('.', ',')}</span>
+                {role === 'admin' && (
+                  <button 
+                    onClick={() => deletarGasto(g.id)}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '1.2rem', cursor: 'pointer' }}
+                    title="Apagar gasto"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
                 {g.parcela && <span className="parcela">{g.parcela}</span>}
               </div>
               <span className="valor">R$ {g.valor.toFixed(2).replace('.', ',')}</span>
